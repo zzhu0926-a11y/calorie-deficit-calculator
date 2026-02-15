@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Deficit & Macro Calculator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      max-width: 520px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #ccc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #e0e0e0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: #4a9eff;
+    }
+
+    select option { background: #111; }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row .field { flex: 1; }
+
+    .unit-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .unit-toggle button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #888;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .unit-toggle button.active {
+      background: #4a9eff;
+      color: #fff;
+      border-color: #4a9eff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #4a9eff, #2d7cd6);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn:hover { opacity: 0.9; }
+
+    /* Results */
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .result-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .result-header .big-number {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #4a9eff;
+    }
+
+    .result-header .big-label {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: #111;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      border: 1px solid #2a2a2a;
+    }
+
+    .stat-box .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-box .label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .macro-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .macro-item .macro-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .macro-item .macro-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .macro-item .macro-value {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .macro-bar-bg {
+      height: 10px;
+      background: #222;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .macro-bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.6s ease;
+    }
+
+    .protein .macro-name { color: #ff6b6b; }
+    .protein .macro-bar-fill { background: #ff6b6b; }
+
+    .fat .macro-name { color: #ffd93d; }
+    .fat .macro-bar-fill { background: #ffd93d; }
+
+    .carbs .macro-name { color: #6bcb77; }
+    .carbs .macro-bar-fill { background: #6bcb77; }
+
+    .breakdown {
+      margin-top: 20px;
+      padding: 16px;
+      background: #111;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .breakdown h3 {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .breakdown-row:last-child { border-bottom: none; }
+
+    .breakdown-row .bl { color: #999; }
+    .breakdown-row .bv { color: #e0e0e0; font-weight: 600; }
+
+    .warning {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #2a1a0a;
+      border: 1px solid #6b4400;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #f0a030;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .warning.visible { display: block; }
+
+    .disclaimer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid #333;
+      color: #888;
+      background: #111;
+      transition: all 0.2s;
+    }
+
+    nav a.active {
+      background: #4a9eff;
+      color: #fff;
+      border-color: #4a9eff;
+    }
+
+    nav a:hover:not(.active) { border-color: #555; color: #ccc; }
+
+    .slider-field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .slider-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #4a9eff;
+    }
+
+    .slider-hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      margin-top: 8px;
+      border: none;
+      padding: 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4a9eff;
+      cursor: pointer;
+      border: 2px solid #111;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4a9eff;
+      cursor: pointer;
+      border: 2px solid #111;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="index.html" class="active">Deficit Calculator</a>
+      <a href="cycle-nutrition.html">Cycle Nutrition</a>
+    </nav>
+    <h1>Calorie Deficit & Macro Calculator</h1>
+    <p class="subtitle">Calculate your daily calories and macros to reach your body fat goal</p>
+
+    <!-- Input Card -->
+    <div class="card">
+      <h2>Your Info</h2>
+
+      <div class="unit-toggle">
+        <button id="btn-metric" class="active" onclick="setUnit('metric')">Metric (kg/cm)</button>
+        <button id="btn-imperial" onclick="setUnit('imperial')">Imperial (lb/in)</button>
+      </div>
+
+      <div class="unit-toggle">
+        <button id="btn-male" class="active" onclick="setGender('male')">Male</button>
+        <button id="btn-female" onclick="setGender('female')">Female</button>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 30" min="15" max="80">
+        </div>
+        <div class="field">
+          <label id="height-label">Height (cm)</label>
+          <input type="number" id="height" placeholder="e.g. 175" step="0.1" min="100">
+        </div>
+      </div>
+
+      <div class="field">
+        <label id="weight-label">Current Weight (kg)</label>
+        <input type="number" id="weight" placeholder="e.g. 80" step="0.1" min="30">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Current Body Fat (%)</label>
+          <input type="number" id="current-bf" placeholder="e.g. 25" step="0.1" min="3" max="60">
+        </div>
+        <div class="field">
+          <label>Goal Body Fat (%)</label>
+          <input type="number" id="goal-bf" placeholder="e.g. 15" step="0.1" min="3" max="60">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Timeframe (weeks)</label>
+        <input type="number" id="weeks" placeholder="e.g. 16" min="1" max="104">
+      </div>
+
+      <div class="field">
+        <label>Activity Level</label>
+        <select id="activity" onchange="updateProteinRecommendation()">
+          <option value="1.2">Sedentary (desk job, little exercise)</option>
+          <option value="1.375">Lightly Active (1-3 days/week)</option>
+          <option value="1.55" selected>Moderately Active (3-5 days/week)</option>
+          <option value="1.725">Very Active (6-7 days/week)</option>
+          <option value="1.9">Extremely Active (athlete / physical job)</option>
+        </select>
+      </div>
+
+      <div class="field slider-field">
+        <label>
+          <span>Protein Intake (g/kg of lean mass)</span>
+          <span class="slider-value" id="protein-slider-value">1.8</span>
+        </label>
+        <input type="range" id="protein-slider" min="1.6" max="2.0" step="0.1" value="1.8" oninput="onProteinSliderChange()">
+        <div class="slider-hint" id="protein-hint">Recommended: 1.8g/kg — moderate activity needs moderate protein</div>
+      </div>
+
+      <button class="btn" onclick="calculate()">Calculate</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <div class="card">
+        <div class="result-header">
+          <div class="big-number" id="target-cal">—</div>
+          <div class="big-label">Daily Calories (kcal)</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="value" id="res-weight-loss">—</div>
+            <div class="label" id="res-weight-loss-label">Weight to Lose</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="res-deficit">—</div>
+            <div class="label">Daily Deficit (kcal)</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="res-tdee">—</div>
+            <div class="label">TDEE (kcal)</div>
+          </div>
+          <div class="stat-box">
+            <div class="value" id="res-bmr">—</div>
+            <div class="label">BMR (kcal)</div>
+          </div>
+        </div>
+
+        <h2>Daily Macros</h2>
+        <div class="macro-bars">
+          <div class="macro-item protein">
+            <div class="macro-header">
+              <span class="macro-name">Protein</span>
+              <span class="macro-value" id="macro-protein">—</span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" id="bar-protein" style="width:0%"></div></div>
+          </div>
+          <div class="macro-item fat">
+            <div class="macro-header">
+              <span class="macro-name">Fat</span>
+              <span class="macro-value" id="macro-fat">—</span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" id="bar-fat" style="width:0%"></div></div>
+          </div>
+          <div class="macro-item carbs">
+            <div class="macro-header">
+              <span class="macro-name">Carbs</span>
+              <span class="macro-value" id="macro-carbs">—</span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" id="bar-carbs" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="breakdown">
+          <h3>Breakdown</h3>
+          <div class="breakdown-row"><span class="bl">Lean Body Mass</span><span class="bv" id="bd-lbm">—</span></div>
+          <div class="breakdown-row"><span class="bl">Target Weight</span><span class="bv" id="bd-target-w">—</span></div>
+          <div class="breakdown-row"><span class="bl">Fat to Lose</span><span class="bv" id="bd-fat-lose">—</span></div>
+          <div class="breakdown-row"><span class="bl">Weekly Loss Rate</span><span class="bv" id="bd-weekly">—</span></div>
+          <div class="breakdown-row"><span class="bl">Protein</span><span class="bv" id="bd-protein">—</span></div>
+          <div class="breakdown-row"><span class="bl">Fat</span><span class="bv" id="bd-fat">—</span></div>
+          <div class="breakdown-row"><span class="bl">Carbs</span><span class="bv" id="bd-carbs">—</span></div>
+        </div>
+
+        <div class="warning" id="warning"></div>
+        <p class="disclaimer">BMR is averaged from Katch-McArdle and Mifflin-St Jeor formulas for improved accuracy. Results are estimates — adjust based on real-world progress. Consult a professional before starting any diet plan.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let unit = 'metric';
+    let gender = 'male';
+
+    function setUnit(u) {
+      unit = u;
+      document.getElementById('btn-metric').classList.toggle('active', u === 'metric');
+      document.getElementById('btn-imperial').classList.toggle('active', u === 'imperial');
+      document.getElementById('weight-label').textContent = u === 'metric' ? 'Current Weight (kg)' : 'Current Weight (lb)';
+      document.getElementById('height-label').textContent = u === 'metric' ? 'Height (cm)' : 'Height (in)';
+    }
+
+    function setGender(g) {
+      gender = g;
+      document.getElementById('btn-male').classList.toggle('active', g === 'male');
+      document.getElementById('btn-female').classList.toggle('active', g === 'female');
+      updateProteinRecommendation();
+    }
+
+    function getRecommendedProtein() {
+      const activity = parseFloat(document.getElementById('activity').value);
+      // More active = higher protein need; women slightly less
+      const base = gender === 'female' ? -0.1 : 0;
+      if (activity >= 1.725) return Math.min(2.0, 2.0 + base);   // very/extremely active
+      if (activity >= 1.55)  return Math.min(2.0, 1.8 + base);   // moderately active
+      if (activity >= 1.375) return Math.min(2.0, 1.7 + base);   // lightly active
+      return Math.min(2.0, 1.6 + base);                          // sedentary
+    }
+
+    function updateProteinRecommendation() {
+      const rec = getRecommendedProtein();
+      const slider = document.getElementById('protein-slider');
+      slider.value = rec;
+      document.getElementById('protein-slider-value').textContent = rec.toFixed(1);
+
+      const hints = {
+        '1.6': 'Lower activity — 1.6g/kg is sufficient to preserve muscle',
+        '1.7': 'Light activity — 1.7g/kg supports recovery from occasional training',
+        '1.8': 'Moderate activity — 1.8g/kg balances muscle preservation and satiety',
+        '1.9': 'High activity — 1.9g/kg supports frequent intense training',
+        '2.0': 'Very high activity — 2.0g/kg maximizes muscle retention during a cut',
+      };
+      document.getElementById('protein-hint').textContent = 'Recommended: ' + rec.toFixed(1) + 'g/kg — ' + (hints[rec.toFixed(1)] || '');
+    }
+
+    function onProteinSliderChange() {
+      const val = parseFloat(document.getElementById('protein-slider').value);
+      document.getElementById('protein-slider-value').textContent = val.toFixed(1);
+      const rec = getRecommendedProtein();
+      if (val === rec) {
+        updateProteinRecommendation();
+      } else {
+        const hints = {
+          '1.6': 'Lower protein — good for sedentary or lighter individuals',
+          '1.7': 'Moderate protein — suits light to moderate activity',
+          '1.8': 'Balanced protein — popular choice for most active people',
+          '1.9': 'Higher protein — good for frequent resistance training',
+          '2.0': 'Maximum protein — best for intense training during a cut',
+        };
+        document.getElementById('protein-hint').textContent = hints[val.toFixed(1)] || '';
+      }
+    }
+
+    function toKg(w) {
+      return unit === 'imperial' ? w / 2.205 : w;
+    }
+
+    function toCm(h) {
+      return unit === 'imperial' ? h * 2.54 : h;
+    }
+
+    function formatWeight(kg) {
+      if (unit === 'imperial') return (kg * 2.205).toFixed(1) + ' lb';
+      return kg.toFixed(1) + ' kg';
+    }
+
+    function calculate() {
+      const rawWeight = parseFloat(document.getElementById('weight').value);
+      const rawHeight = parseFloat(document.getElementById('height').value);
+      const age = parseInt(document.getElementById('age').value);
+      const currentBf = parseFloat(document.getElementById('current-bf').value);
+      const goalBf = parseFloat(document.getElementById('goal-bf').value);
+      const weeks = parseInt(document.getElementById('weeks').value);
+      const activityMultiplier = parseFloat(document.getElementById('activity').value);
+
+      if (!rawWeight || !rawHeight || !age || !currentBf || !goalBf || !weeks) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      if (goalBf >= currentBf) {
+        alert('Goal body fat % must be lower than current body fat %.');
+        return;
+      }
+
+      const weightKg = toKg(rawWeight);
+      const heightCm = toCm(rawHeight);
+
+      // 1. Lean body mass (assumes LBM stays constant)
+      const lbm = weightKg * (1 - currentBf / 100);
+
+      // 2. Target weight at goal body fat
+      const targetWeight = lbm / (1 - goalBf / 100);
+
+      // 3. Fat to lose
+      const fatToLose = weightKg - targetWeight;
+
+      // 4. Weekly loss rate
+      const weeklyLoss = fatToLose / weeks;
+
+      // 5. Daily calorie deficit
+      // 1 kg of fat ≈ 7700 kcal
+      const dailyDeficit = Math.round((fatToLose * 7700) / (weeks * 7));
+
+      // 6. BMR — hybrid of two formulas for better accuracy
+      // Katch-McArdle (uses LBM, gender-neutral)
+      const bmrKatch = 370 + (21.6 * lbm);
+      // Mifflin-St Jeor (uses gender, height, age)
+      const bmrMifflin = gender === 'male'
+        ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5
+        : (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+      // Average both for a more accurate estimate
+      const bmr = Math.round((bmrKatch + bmrMifflin) / 2);
+
+      // 7. TDEE
+      const tdee = Math.round(bmr * activityMultiplier);
+
+      // 8. Target daily calories
+      const targetCal = Math.round(tdee - dailyDeficit);
+
+      // 9. Macros
+      // Protein: user-selected g/kg of LBM via slider
+      const proteinPerKg = parseFloat(document.getElementById('protein-slider').value);
+      const proteinG = Math.round(lbm * proteinPerKg);
+      const proteinCal = proteinG * 4;
+
+      // Fat: 25% of target calories for men, 28% for women (women need slightly more dietary fat for hormonal health)
+      const fatPct = gender === 'male' ? 0.25 : 0.28;
+      const fatCal = Math.round(targetCal * fatPct);
+      const fatG = Math.round(fatCal / 9);
+
+      // Carbs: remaining calories
+      const carbsCal = targetCal - proteinCal - fatCal;
+      const carbsG = Math.round(carbsCal / 4);
+
+      // Total macro calories for bar percentages
+      const totalMacroCal = proteinCal + fatCal + carbsCal;
+
+      // Display results
+      document.getElementById('target-cal').textContent = targetCal;
+      document.getElementById('res-weight-loss').textContent = formatWeight(fatToLose);
+      document.getElementById('res-deficit').textContent = dailyDeficit;
+      document.getElementById('res-tdee').textContent = tdee;
+      document.getElementById('res-bmr').textContent = bmr;
+
+      document.getElementById('macro-protein').textContent = proteinG + 'g  ·  ' + proteinCal + ' kcal';
+      document.getElementById('macro-fat').textContent = fatG + 'g  ·  ' + fatCal + ' kcal';
+      document.getElementById('macro-carbs').textContent = carbsG + 'g  ·  ' + carbsCal + ' kcal';
+
+      setTimeout(() => {
+        document.getElementById('bar-protein').style.width = ((proteinCal / totalMacroCal) * 100) + '%';
+        document.getElementById('bar-fat').style.width = ((fatCal / totalMacroCal) * 100) + '%';
+        document.getElementById('bar-carbs').style.width = ((carbsCal / totalMacroCal) * 100) + '%';
+      }, 50);
+
+      document.getElementById('bd-lbm').textContent = formatWeight(lbm);
+      document.getElementById('bd-target-w').textContent = formatWeight(targetWeight);
+      document.getElementById('bd-fat-lose').textContent = formatWeight(fatToLose);
+      document.getElementById('bd-weekly').textContent = formatWeight(weeklyLoss) + '/week';
+      document.getElementById('bd-protein').textContent = proteinG + 'g (' + proteinPerKg + 'g/kg LBM) — ' + Math.round(proteinCal / targetCal * 100) + '%';
+      document.getElementById('bd-fat').textContent = fatG + 'g (' + Math.round(fatPct * 100) + '% of calories) — ' + Math.round(fatCal / targetCal * 100) + '%';
+      document.getElementById('bd-carbs').textContent = carbsG + 'g (remaining) — ' + Math.round(carbsCal / targetCal * 100) + '%';
+
+      // Warnings
+      const warnings = [];
+      if (targetCal < 1200) warnings.push('Target calories are very low (<1200 kcal). This may not be sustainable or healthy. Consider extending your timeframe.');
+      if (weeklyLoss > 1.0) warnings.push('Weekly loss rate exceeds 1 kg/week. You risk losing muscle mass. A slower approach is recommended.');
+      if (dailyDeficit > 1000) warnings.push('Daily deficit exceeds 1000 kcal. This is aggressive and may lead to fatigue, muscle loss, and metabolic adaptation.');
+      if (carbsG < 50) warnings.push('Carb intake is very low (<50g). You may experience low energy. Consider increasing your timeframe or reducing protein/fat slightly.');
+      if (gender === 'female' && goalBf < 15) warnings.push('A body fat % below 15% for women can disrupt hormonal balance and menstrual cycles. Consider a goal of 18-22% for a lean, healthy physique.');
+      if (gender === 'male' && goalBf < 6) warnings.push('A body fat % below 6% for men is extremely low and difficult to maintain. Consider a goal of 10-12% for a lean, sustainable physique.');
+
+      const warningEl = document.getElementById('warning');
+      if (warnings.length > 0) {
+        warningEl.innerHTML = '⚠️ ' + warnings.join('<br><br>⚠️ ');
+        warningEl.classList.add('visible');
+      } else {
+        warningEl.classList.remove('visible');
+      }
+
+      document.getElementById('results').classList.add('visible');
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

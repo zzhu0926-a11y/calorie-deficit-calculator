@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cycle-Based Nutrition Planner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container { max-width: 560px; width: 100%; }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid #333;
+      color: #888;
+      background: #111;
+      transition: all 0.2s;
+    }
+
+    nav a.active {
+      background: #4a9eff;
+      color: #fff;
+      border-color: #4a9eff;
+    }
+
+    nav a:hover:not(.active) { border-color: #555; color: #ccc; }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #ccc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #e0e0e0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus { border-color: #4a9eff; }
+    select option { background: #111; }
+
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+
+    .unit-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .unit-toggle button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #888;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .unit-toggle button.active {
+      background: #4a9eff;
+      color: #fff;
+      border-color: #4a9eff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #e87eaa, #c95c8a);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn:hover { opacity: 0.9; }
+
+    /* Results */
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    /* Cycle Timeline */
+    .cycle-timeline {
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 8px;
+      margin-bottom: 24px;
+    }
+
+    .cycle-timeline .seg-menstrual { flex: 5; background: #e05a6d; }
+    .cycle-timeline .seg-follicular { flex: 9; background: #5ec4e0; }
+    .cycle-timeline .seg-ovulatory { flex: 3; background: #a87ee0; }
+    .cycle-timeline .seg-luteal { flex: 11; background: #e0a85e; }
+
+    .cycle-labels {
+      display: flex;
+      margin-bottom: 24px;
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    .cycle-labels span { text-align: center; }
+    .cycle-labels .seg-menstrual { flex: 5; color: #e05a6d; }
+    .cycle-labels .seg-follicular { flex: 9; color: #5ec4e0; }
+    .cycle-labels .seg-ovulatory { flex: 3; color: #a87ee0; }
+    .cycle-labels .seg-luteal { flex: 11; color: #e0a85e; }
+
+    /* Phase Cards */
+    .phase-card {
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid;
+    }
+
+    .phase-card:last-child { margin-bottom: 0; }
+
+    .phase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .phase-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .phase-days {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .phase-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .phase-description {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      opacity: 0.85;
+    }
+
+    .phase-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .phase-stat {
+      text-align: center;
+      padding: 10px 4px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.25);
+    }
+
+    .phase-stat .ps-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .phase-stat .ps-label {
+      font-size: 0.65rem;
+      margin-top: 2px;
+      opacity: 0.6;
+    }
+
+    /* Phase colors */
+    .phase-menstrual {
+      background: #1a0f11;
+      border-color: #3d1a22;
+    }
+    .phase-menstrual .phase-name { color: #e05a6d; }
+    .phase-menstrual .phase-tag { background: #3d1a22; color: #e05a6d; }
+
+    .phase-follicular {
+      background: #0f1a1d;
+      border-color: #1a3340;
+    }
+    .phase-follicular .phase-name { color: #5ec4e0; }
+    .phase-follicular .phase-tag { background: #1a3340; color: #5ec4e0; }
+
+    .phase-ovulatory {
+      background: #150f1d;
+      border-color: #2d1a40;
+    }
+    .phase-ovulatory .phase-name { color: #a87ee0; }
+    .phase-ovulatory .phase-tag { background: #2d1a40; color: #a87ee0; }
+
+    .phase-luteal {
+      background: #1d170f;
+      border-color: #40301a;
+    }
+    .phase-luteal .phase-name { color: #e0a85e; }
+    .phase-luteal .phase-tag { background: #40301a; color: #e0a85e; }
+
+    .phase-tips {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .phase-tips h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    .tip-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 4px;
+      line-height: 1.5;
+      opacity: 0.8;
+    }
+
+    .tip-icon { font-size: 0.75rem; flex-shrink: 0; }
+
+    .base-summary {
+      text-align: center;
+      padding: 16px;
+      background: #111;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .base-summary .bs-label {
+      font-size: 0.75rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .base-summary .bs-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 8px;
+    }
+
+    .base-summary .bs-item {
+      text-align: center;
+    }
+
+    .base-summary .bs-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #4a9eff;
+    }
+
+    .base-summary .bs-name {
+      font-size: 0.7rem;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .disclaimer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #555;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="index.html">Deficit Calculator</a>
+      <a href="cycle-nutrition.html" class="active">Cycle Nutrition</a>
+    </nav>
+
+    <h1>Cycle-Based Nutrition</h1>
+    <p class="subtitle">Adjust your calories and macros to work with your menstrual cycle</p>
+
+    <!-- Input Card -->
+    <div class="card">
+      <h2>Your Info</h2>
+
+      <div class="unit-toggle">
+        <button id="btn-metric" class="active" onclick="setUnit('metric')">Metric (kg/cm)</button>
+        <button id="btn-imperial" onclick="setUnit('imperial')">Imperial (lb/in)</button>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 28" min="15" max="80">
+        </div>
+        <div class="field">
+          <label id="height-label">Height (cm)</label>
+          <input type="number" id="height" placeholder="e.g. 165" step="0.1" min="100">
+        </div>
+      </div>
+
+      <div class="field">
+        <label id="weight-label">Current Weight (kg)</label>
+        <input type="number" id="weight" placeholder="e.g. 65" step="0.1" min="30">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Current Body Fat (%)</label>
+          <input type="number" id="current-bf" placeholder="e.g. 28" step="0.1" min="3" max="60">
+        </div>
+        <div class="field">
+          <label>Goal Body Fat (%)</label>
+          <input type="number" id="goal-bf" placeholder="e.g. 22" step="0.1" min="3" max="60">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Timeframe (weeks)</label>
+        <input type="number" id="weeks" placeholder="e.g. 16" min="1" max="104">
+      </div>
+
+      <div class="field">
+        <label>Activity Level</label>
+        <select id="activity">
+          <option value="1.2">Sedentary (desk job, little exercise)</option>
+          <option value="1.375">Lightly Active (1-3 days/week)</option>
+          <option value="1.55" selected>Moderately Active (3-5 days/week)</option>
+          <option value="1.725">Very Active (6-7 days/week)</option>
+          <option value="1.9">Extremely Active (athlete / physical job)</option>
+        </select>
+      </div>
+
+      <button class="btn" onclick="calculate()">Generate Cycle Plan</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <div class="card">
+        <div class="base-summary">
+          <div class="bs-label">Your Baseline (Average TDEE & Deficit)</div>
+          <div class="bs-row">
+            <div class="bs-item">
+              <div class="bs-value" id="bs-tdee">—</div>
+              <div class="bs-name">TDEE</div>
+            </div>
+            <div class="bs-item">
+              <div class="bs-value" id="bs-target">—</div>
+              <div class="bs-name">Target Cal</div>
+            </div>
+            <div class="bs-item">
+              <div class="bs-value" id="bs-deficit">—</div>
+              <div class="bs-name">Deficit</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cycle-timeline">
+          <div class="seg-menstrual"></div>
+          <div class="seg-follicular"></div>
+          <div class="seg-ovulatory"></div>
+          <div class="seg-luteal"></div>
+        </div>
+        <div class="cycle-labels">
+          <span class="seg-menstrual">Day 1-5</span>
+          <span class="seg-follicular">Day 6-14</span>
+          <span class="seg-ovulatory">Day 15-17</span>
+          <span class="seg-luteal">Day 18-28</span>
+        </div>
+
+        <!-- Menstrual Phase -->
+        <div class="phase-card phase-menstrual">
+          <div class="phase-header">
+            <div>
+              <div class="phase-name">Menstrual Phase</div>
+              <div class="phase-days">Day 1 – 5</div>
+            </div>
+            <span class="phase-tag">Rest & Recover</span>
+          </div>
+          <div class="phase-description">
+            Energy and hormones are at their lowest. Focus on nourishing, warming foods. A smaller deficit helps your body recover. Iron-rich foods are especially important.
+          </div>
+          <div class="phase-stats">
+            <div class="phase-stat">
+              <div class="ps-value" id="m-cal">—</div>
+              <div class="ps-label">CALORIES</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="m-protein">—</div>
+              <div class="ps-label">PROTEIN</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="m-fat">—</div>
+              <div class="ps-label">FAT</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="m-carbs">—</div>
+              <div class="ps-label">CARBS</div>
+            </div>
+          </div>
+          <div class="phase-tips">
+            <h4>Tips</h4>
+            <div class="tip-row"><span class="tip-icon">🩸</span> Eat iron-rich foods: red meat, spinach, lentils</div>
+            <div class="tip-row"><span class="tip-icon">🧘</span> Light exercise: yoga, walking, stretching</div>
+            <div class="tip-row"><span class="tip-icon">🍵</span> Warm, comforting meals — soups, stews, oatmeal</div>
+          </div>
+        </div>
+
+        <!-- Follicular Phase -->
+        <div class="phase-card phase-follicular">
+          <div class="phase-header">
+            <div>
+              <div class="phase-name">Follicular Phase</div>
+              <div class="phase-days">Day 6 – 14</div>
+            </div>
+            <span class="phase-tag">Push Hard</span>
+          </div>
+          <div class="phase-description">
+            Estrogen rises — you feel energized and strong. This is the best time for a larger deficit and intense training. Your body handles carbs well and builds muscle more efficiently.
+          </div>
+          <div class="phase-stats">
+            <div class="phase-stat">
+              <div class="ps-value" id="f-cal">—</div>
+              <div class="ps-label">CALORIES</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="f-protein">—</div>
+              <div class="ps-label">PROTEIN</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="f-fat">—</div>
+              <div class="ps-label">FAT</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="f-carbs">—</div>
+              <div class="ps-label">CARBS</div>
+            </div>
+          </div>
+          <div class="phase-tips">
+            <h4>Tips</h4>
+            <div class="tip-row"><span class="tip-icon">💪</span> Best time for HIIT, heavy lifting, new PRs</div>
+            <div class="tip-row"><span class="tip-icon">🥗</span> Higher carb tolerance — fuel your workouts</div>
+            <div class="tip-row"><span class="tip-icon">🔥</span> Push your biggest deficit here — energy is high</div>
+          </div>
+        </div>
+
+        <!-- Ovulatory Phase -->
+        <div class="phase-card phase-ovulatory">
+          <div class="phase-header">
+            <div>
+              <div class="phase-name">Ovulatory Phase</div>
+              <div class="phase-days">Day 15 – 17</div>
+            </div>
+            <span class="phase-tag">Peak Energy</span>
+          </div>
+          <div class="phase-description">
+            Peak estrogen and a spike in testosterone — maximum strength and endurance. Maintain the strong deficit. Great time for challenging workouts and higher protein.
+          </div>
+          <div class="phase-stats">
+            <div class="phase-stat">
+              <div class="ps-value" id="o-cal">—</div>
+              <div class="ps-label">CALORIES</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="o-protein">—</div>
+              <div class="ps-label">PROTEIN</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="o-fat">—</div>
+              <div class="ps-label">FAT</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="o-carbs">—</div>
+              <div class="ps-label">CARBS</div>
+            </div>
+          </div>
+          <div class="phase-tips">
+            <h4>Tips</h4>
+            <div class="tip-row"><span class="tip-icon">⚡</span> Peak performance window — go all out</div>
+            <div class="tip-row"><span class="tip-icon">🥩</span> Prioritize protein for muscle synthesis</div>
+            <div class="tip-row"><span class="tip-icon">🏃‍♀️</span> Great for endurance training and group classes</div>
+          </div>
+        </div>
+
+        <!-- Luteal Phase -->
+        <div class="phase-card phase-luteal">
+          <div class="phase-header">
+            <div>
+              <div class="phase-name">Luteal Phase</div>
+              <div class="phase-days">Day 18 – 28</div>
+            </div>
+            <span class="phase-tag">Ease Up</span>
+          </div>
+          <div class="phase-description">
+            Progesterone rises, energy drops, and carb cravings kick in. A smaller deficit with more carbs helps manage cravings and prevents binging. Your BMR naturally increases slightly in this phase — work with your body, not against it.
+          </div>
+          <div class="phase-stats">
+            <div class="phase-stat">
+              <div class="ps-value" id="l-cal">—</div>
+              <div class="ps-label">CALORIES</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="l-protein">—</div>
+              <div class="ps-label">PROTEIN</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="l-fat">—</div>
+              <div class="ps-label">FAT</div>
+            </div>
+            <div class="phase-stat">
+              <div class="ps-value" id="l-carbs">—</div>
+              <div class="ps-label">CARBS</div>
+            </div>
+          </div>
+          <div class="phase-tips">
+            <h4>Tips</h4>
+            <div class="tip-row"><span class="tip-icon">🍠</span> Lean into complex carbs: sweet potato, rice, oats</div>
+            <div class="tip-row"><span class="tip-icon">🍫</span> Small treats are OK — dark chocolate, fruit</div>
+            <div class="tip-row"><span class="tip-icon">🚶‍♀️</span> Moderate exercise: steady cardio, lighter weights</div>
+            <div class="tip-row"><span class="tip-icon">😴</span> Prioritize sleep — progesterone makes you sleepier</div>
+          </div>
+        </div>
+
+        <p class="disclaimer">
+          Phase durations are based on a typical 28-day cycle and may vary. Calorie adjustments are balanced across the full cycle so your overall weekly deficit stays on track. Consult a healthcare professional for personalized advice.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let unit = 'metric';
+
+    function setUnit(u) {
+      unit = u;
+      document.getElementById('btn-metric').classList.toggle('active', u === 'metric');
+      document.getElementById('btn-imperial').classList.toggle('active', u === 'imperial');
+      document.getElementById('weight-label').textContent = u === 'metric' ? 'Current Weight (kg)' : 'Current Weight (lb)';
+      document.getElementById('height-label').textContent = u === 'metric' ? 'Height (cm)' : 'Height (in)';
+    }
+
+    function toKg(w) { return unit === 'imperial' ? w / 2.205 : w; }
+    function toCm(h) { return unit === 'imperial' ? h * 2.54 : h; }
+
+    function calculate() {
+      const rawWeight = parseFloat(document.getElementById('weight').value);
+      const rawHeight = parseFloat(document.getElementById('height').value);
+      const age = parseInt(document.getElementById('age').value);
+      const currentBf = parseFloat(document.getElementById('current-bf').value);
+      const goalBf = parseFloat(document.getElementById('goal-bf').value);
+      const weeks = parseInt(document.getElementById('weeks').value);
+      const activityMultiplier = parseFloat(document.getElementById('activity').value);
+
+      if (!rawWeight || !rawHeight || !age || !currentBf || !goalBf || !weeks) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      if (goalBf >= currentBf) {
+        alert('Goal body fat % must be lower than current body fat %.');
+        return;
+      }
+
+      const weightKg = toKg(rawWeight);
+      const heightCm = toCm(rawHeight);
+
+      // Base calculations (same as main calculator, female Mifflin-St Jeor)
+      const lbm = weightKg * (1 - currentBf / 100);
+      const targetWeight = lbm / (1 - goalBf / 100);
+      const fatToLose = weightKg - targetWeight;
+
+      const bmrKatch = 370 + (21.6 * lbm);
+      const bmrMifflin = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+      const bmr = (bmrKatch + bmrMifflin) / 2;
+
+      const tdee = Math.round(bmr * activityMultiplier);
+      const dailyDeficit = Math.round((fatToLose * 7700) / (weeks * 7));
+      const baseCal = Math.round(tdee - dailyDeficit);
+
+      // Display baseline
+      document.getElementById('bs-tdee').textContent = tdee;
+      document.getElementById('bs-target').textContent = baseCal;
+      document.getElementById('bs-deficit').textContent = dailyDeficit;
+
+      // ── Phase adjustments ──
+      // The idea: redistribute the deficit across the cycle.
+      // Push harder in follicular/ovulatory, ease up in luteal/menstrual.
+      // Total weekly deficit stays the same over a full 28-day cycle.
+      //
+      // Phase days: menstrual=5, follicular=9, ovulatory=3, luteal=11 (total=28)
+      //
+      // Deficit multipliers (weighted so 28-day average = 1.0):
+      //   menstrual:   0.6x deficit  (ease up)
+      //   follicular:  1.3x deficit  (push hard)
+      //   ovulatory:   1.3x deficit  (peak)
+      //   luteal:      0.7x deficit  (ease up, cravings)
+      //
+      // Weighted check: (5*0.6 + 9*1.3 + 3*1.3 + 11*0.7) / 28 = (3+11.7+3.9+7.7)/28 = 26.3/28 ≈ 0.939
+      // Normalize: divide each by 0.939 to make average exactly 1.0
+      const rawMultipliers = { menstrual: 0.6, follicular: 1.3, ovulatory: 1.3, luteal: 0.7 };
+      const phaseDays = { menstrual: 5, follicular: 9, ovulatory: 3, luteal: 11 };
+      const weightedSum = Object.keys(rawMultipliers).reduce((s, k) => s + rawMultipliers[k] * phaseDays[k], 0);
+      const norm = weightedSum / 28;
+
+      const phases = {};
+      for (const p of ['menstrual', 'follicular', 'ovulatory', 'luteal']) {
+        const deficitMult = rawMultipliers[p] / norm;
+        const phaseDeficit = Math.round(dailyDeficit * deficitMult);
+        const phaseCal = Math.round(tdee - phaseDeficit);
+
+        // Macro adjustments per phase
+        let proteinPerKg, fatPct;
+        switch (p) {
+          case 'menstrual':
+            proteinPerKg = 1.6;  // moderate protein, focus on comfort
+            fatPct = 0.30;       // slightly higher fat for warmth/satiety
+            break;
+          case 'follicular':
+            proteinPerKg = 1.9;  // high protein, muscle building window
+            fatPct = 0.22;       // lower fat, higher carb tolerance
+            break;
+          case 'ovulatory':
+            proteinPerKg = 2.0;  // peak protein for peak performance
+            fatPct = 0.22;       // lower fat, fuel with carbs
+            break;
+          case 'luteal':
+            proteinPerKg = 1.7;  // moderate protein
+            fatPct = 0.28;       // moderate fat
+            break;                // carbs fill the rest — satisfies cravings
+        }
+
+        const proteinG = Math.round(lbm * proteinPerKg);
+        const proteinCal = proteinG * 4;
+        const fatCal = Math.round(phaseCal * fatPct);
+        const fatG = Math.round(fatCal / 9);
+        const carbsCal = phaseCal - proteinCal - fatCal;
+        const carbsG = Math.round(Math.max(0, carbsCal) / 4);
+
+        phases[p] = { cal: phaseCal, proteinG, fatG, carbsG };
+      }
+
+      // Populate phase cards
+      const prefixes = { menstrual: 'm', follicular: 'f', ovulatory: 'o', luteal: 'l' };
+      for (const [phase, pre] of Object.entries(prefixes)) {
+        const d = phases[phase];
+        document.getElementById(pre + '-cal').textContent = d.cal;
+        document.getElementById(pre + '-protein').textContent = d.proteinG + 'g';
+        document.getElementById(pre + '-fat').textContent = d.fatG + 'g';
+        document.getElementById(pre + '-carbs').textContent = d.carbsG + 'g';
+      }
+
+      document.getElementById('results').classList.add('visible');
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
