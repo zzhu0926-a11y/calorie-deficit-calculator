@@ -347,6 +347,33 @@
       color: #555;
       line-height: 1.5;
     }
+
+    .share-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .share-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #ccc;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .share-btn:hover { border-color: #e87eaa; color: #fff; }
+
+    .share-btn.copied {
+      border-color: #6bcb77;
+      color: #6bcb77;
+    }
   </style>
 </head>
 <body>
@@ -601,6 +628,11 @@
           </div>
         </div>
 
+        <div class="share-buttons">
+          <button class="share-btn" id="btn-share-link" onclick="shareLink()">Share Link</button>
+          <button class="share-btn" id="btn-copy-results" onclick="copyResults()">Copy Results</button>
+        </div>
+
         <p class="disclaimer">
           Phase durations are based on a typical 28-day cycle and may vary. Calorie adjustments are balanced across the full cycle so your overall weekly deficit stays on track. Consult a healthcare professional for personalized advice.
         </p>
@@ -732,6 +764,74 @@
       document.getElementById('results').classList.add('visible');
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     }
+
+    function shareLink() {
+      const params = new URLSearchParams({
+        u: unit === 'imperial' ? 'i' : 'm',
+        a: document.getElementById('age').value,
+        h: document.getElementById('height').value,
+        w: document.getElementById('weight').value,
+        cb: document.getElementById('current-bf').value,
+        gb: document.getElementById('goal-bf').value,
+        wk: document.getElementById('weeks').value,
+        al: document.getElementById('activity').value,
+      });
+      const url = window.location.origin + window.location.pathname + '?' + params.toString();
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('btn-share-link');
+        btn.textContent = 'Link Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Share Link'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function copyResults() {
+      const text = [
+        '--- Cycle-Based Nutrition Plan ---',
+        '',
+        'Baseline TDEE: ' + document.getElementById('bs-tdee').textContent + ' kcal',
+        'Baseline Target: ' + document.getElementById('bs-target').textContent + ' kcal',
+        'Daily Deficit: ' + document.getElementById('bs-deficit').textContent + ' kcal',
+        '',
+        '--- Menstrual Phase (Day 1-5) ---',
+        'Calories: ' + document.getElementById('m-cal').textContent + ' | Protein: ' + document.getElementById('m-protein').textContent + ' | Fat: ' + document.getElementById('m-fat').textContent + ' | Carbs: ' + document.getElementById('m-carbs').textContent,
+        '',
+        '--- Follicular Phase (Day 6-14) ---',
+        'Calories: ' + document.getElementById('f-cal').textContent + ' | Protein: ' + document.getElementById('f-protein').textContent + ' | Fat: ' + document.getElementById('f-fat').textContent + ' | Carbs: ' + document.getElementById('f-carbs').textContent,
+        '',
+        '--- Ovulatory Phase (Day 15-17) ---',
+        'Calories: ' + document.getElementById('o-cal').textContent + ' | Protein: ' + document.getElementById('o-protein').textContent + ' | Fat: ' + document.getElementById('o-fat').textContent + ' | Carbs: ' + document.getElementById('o-carbs').textContent,
+        '',
+        '--- Luteal Phase (Day 18-28) ---',
+        'Calories: ' + document.getElementById('l-cal').textContent + ' | Protein: ' + document.getElementById('l-protein').textContent + ' | Fat: ' + document.getElementById('l-fat').textContent + ' | Carbs: ' + document.getElementById('l-carbs').textContent,
+        '',
+        'Calculate yours: ' + window.location.origin + window.location.pathname,
+      ].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy-results');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy Results'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    // Load from URL parameters
+    (function loadFromUrl() {
+      const p = new URLSearchParams(window.location.search);
+      if (!p.has('w')) return;
+
+      if (p.get('u') === 'i') setUnit('imperial');
+
+      document.getElementById('age').value = p.get('a') || '';
+      document.getElementById('height').value = p.get('h') || '';
+      document.getElementById('weight').value = p.get('w') || '';
+      document.getElementById('current-bf').value = p.get('cb') || '';
+      document.getElementById('goal-bf').value = p.get('gb') || '';
+      document.getElementById('weeks').value = p.get('wk') || '';
+      if (p.get('al')) document.getElementById('activity').value = p.get('al');
+
+      calculate();
+    })();
   </script>
 </body>
 </html>

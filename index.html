@@ -274,6 +274,33 @@
       line-height: 1.5;
     }
 
+    .share-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .share-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #111;
+      color: #ccc;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .share-btn:hover { border-color: #4a9eff; color: #fff; }
+
+    .share-btn.copied {
+      border-color: #6bcb77;
+      color: #6bcb77;
+    }
+
     nav {
       display: flex;
       gap: 8px;
@@ -495,6 +522,12 @@
         </div>
 
         <div class="warning" id="warning"></div>
+
+        <div class="share-buttons">
+          <button class="share-btn" id="btn-share-link" onclick="shareLink()">Share Link</button>
+          <button class="share-btn" id="btn-copy-results" onclick="copyResults()">Copy Results</button>
+        </div>
+
         <p class="disclaimer">BMR is averaged from Katch-McArdle and Mifflin-St Jeor formulas for improved accuracy. Results are estimates — adjust based on real-world progress. Consult a professional before starting any diet plan.</p>
       </div>
     </div>
@@ -693,6 +726,81 @@
       document.getElementById('results').classList.add('visible');
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     }
+
+    function shareLink() {
+      const params = new URLSearchParams({
+        u: unit === 'imperial' ? 'i' : 'm',
+        g: gender === 'male' ? 'm' : 'f',
+        a: document.getElementById('age').value,
+        h: document.getElementById('height').value,
+        w: document.getElementById('weight').value,
+        cb: document.getElementById('current-bf').value,
+        gb: document.getElementById('goal-bf').value,
+        wk: document.getElementById('weeks').value,
+        al: document.getElementById('activity').value,
+        p: document.getElementById('protein-slider').value,
+      });
+      const url = window.location.origin + window.location.pathname + '?' + params.toString();
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('btn-share-link');
+        btn.textContent = 'Link Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Share Link'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function copyResults() {
+      const text = [
+        '--- Calorie Deficit Plan ---',
+        '',
+        'Daily Calories: ' + document.getElementById('target-cal').textContent + ' kcal',
+        'TDEE: ' + document.getElementById('res-tdee').textContent + ' kcal',
+        'BMR: ' + document.getElementById('res-bmr').textContent + ' kcal',
+        'Daily Deficit: ' + document.getElementById('res-deficit').textContent + ' kcal',
+        'Weight to Lose: ' + document.getElementById('res-weight-loss').textContent,
+        '',
+        '--- Daily Macros ---',
+        'Protein: ' + document.getElementById('macro-protein').textContent,
+        'Fat: ' + document.getElementById('macro-fat').textContent,
+        'Carbs: ' + document.getElementById('macro-carbs').textContent,
+        '',
+        '--- Breakdown ---',
+        'Lean Body Mass: ' + document.getElementById('bd-lbm').textContent,
+        'Target Weight: ' + document.getElementById('bd-target-w').textContent,
+        'Weekly Loss Rate: ' + document.getElementById('bd-weekly').textContent,
+        '',
+        'Calculate yours: ' + window.location.origin + window.location.pathname,
+      ].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy-results');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy Results'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    // Load from URL parameters
+    (function loadFromUrl() {
+      const p = new URLSearchParams(window.location.search);
+      if (!p.has('w')) return;
+
+      if (p.get('u') === 'i') setUnit('imperial');
+      if (p.get('g') === 'f') setGender('female');
+
+      document.getElementById('age').value = p.get('a') || '';
+      document.getElementById('height').value = p.get('h') || '';
+      document.getElementById('weight').value = p.get('w') || '';
+      document.getElementById('current-bf').value = p.get('cb') || '';
+      document.getElementById('goal-bf').value = p.get('gb') || '';
+      document.getElementById('weeks').value = p.get('wk') || '';
+      if (p.get('al')) document.getElementById('activity').value = p.get('al');
+      if (p.get('p')) {
+        document.getElementById('protein-slider').value = p.get('p');
+        document.getElementById('protein-slider-value').textContent = parseFloat(p.get('p')).toFixed(1);
+      }
+
+      calculate();
+    })();
   </script>
 </body>
 </html>
