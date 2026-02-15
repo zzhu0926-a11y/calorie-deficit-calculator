@@ -383,6 +383,56 @@
       color: #6bcb77;
     }
 
+    .slider-field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .slider-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e87eaa;
+    }
+
+    .slider-hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      margin-top: 8px;
+      border: none;
+      padding: 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #e87eaa;
+      cursor: pointer;
+      border: 2px solid #111;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #e87eaa;
+      cursor: pointer;
+      border: 2px solid #111;
+    }
+
     .contact-footer {
       margin-top: 24px;
       padding: 24px;
@@ -483,13 +533,22 @@
 
       <div class="field">
         <label>Activity Level</label>
-        <select id="activity">
+        <select id="activity" onchange="updateProteinRecommendation()">
           <option value="1.2">Sedentary (desk job, little exercise)</option>
           <option value="1.375">Lightly Active (1-3 days/week)</option>
           <option value="1.55" selected>Moderately Active (3-5 days/week)</option>
           <option value="1.725">Very Active (6-7 days/week)</option>
           <option value="1.9">Extremely Active (athlete / physical job)</option>
         </select>
+      </div>
+
+      <div class="field slider-field">
+        <label>
+          <span>Base Protein Intake (g/kg of lean mass)</span>
+          <span class="slider-value" id="protein-slider-value">1.7</span>
+        </label>
+        <input type="range" id="protein-slider" min="1.6" max="2.0" step="0.1" value="1.7" oninput="onProteinSliderChange()">
+        <div class="slider-hint" id="protein-hint">Recommended: 1.7g/kg — moderate activity needs moderate protein</div>
       </div>
 
       <button class="btn" onclick="calculate()">Generate Cycle Plan</button>
@@ -717,6 +776,43 @@
     function toKg(w) { return unit === 'imperial' ? w / 2.205 : w; }
     function toCm(h) { return unit === 'imperial' ? h * 2.54 : h; }
 
+    function getRecommendedProtein() {
+      const activity = parseFloat(document.getElementById('activity').value);
+      if (activity >= 1.725) return 2.0;
+      if (activity >= 1.55)  return 1.7;
+      if (activity >= 1.375) return 1.6;
+      return 1.6;
+    }
+
+    function updateProteinRecommendation() {
+      const rec = getRecommendedProtein();
+      const slider = document.getElementById('protein-slider');
+      slider.value = rec;
+      document.getElementById('protein-slider-value').textContent = rec.toFixed(1);
+
+      const hints = {
+        '1.6': 'Lower activity — 1.6g/kg is sufficient to preserve muscle',
+        '1.7': 'Moderate activity — 1.7g/kg balances muscle preservation and satiety',
+        '1.8': 'Moderate-high activity — 1.8g/kg supports regular training',
+        '1.9': 'High activity — 1.9g/kg supports frequent intense training',
+        '2.0': 'Very high activity — 2.0g/kg maximizes muscle retention during a cut',
+      };
+      document.getElementById('protein-hint').textContent = 'Recommended: ' + rec.toFixed(1) + 'g/kg — ' + (hints[rec.toFixed(1)] || '');
+    }
+
+    function onProteinSliderChange() {
+      const val = parseFloat(document.getElementById('protein-slider').value);
+      document.getElementById('protein-slider-value').textContent = val.toFixed(1);
+      const hints = {
+        '1.6': 'Lower protein — good for sedentary or lighter activity',
+        '1.7': 'Moderate protein — popular choice for most active women',
+        '1.8': 'Balanced protein — supports regular resistance training',
+        '1.9': 'Higher protein — good for frequent intense training',
+        '2.0': 'Maximum protein — best for intense training during a cut',
+      };
+      document.getElementById('protein-hint').textContent = hints[val.toFixed(1)] || '';
+    }
+
     function calculate() {
       const rawWeight = parseFloat(document.getElementById('weight').value);
       const rawHeight = parseFloat(document.getElementById('height').value);
@@ -783,25 +879,26 @@
         const phaseDeficit = Math.round(dailyDeficit * deficitMult);
         const phaseCal = Math.round(tdee - phaseDeficit);
 
-        // Macro adjustments per phase
+        // Macro adjustments per phase — protein scales from the user's base slider value
+        const baseProtein = parseFloat(document.getElementById('protein-slider').value);
         let proteinPerKg, fatPct;
         switch (p) {
           case 'menstrual':
-            proteinPerKg = 1.6;  // moderate protein, focus on comfort
+            proteinPerKg = Math.max(1.6, baseProtein - 0.2);  // ease down, focus on comfort
             fatPct = 0.30;       // slightly higher fat for warmth/satiety
             break;
           case 'follicular':
-            proteinPerKg = 1.9;  // high protein, muscle building window
+            proteinPerKg = Math.min(2.0, baseProtein + 0.1);  // push up, muscle building window
             fatPct = 0.22;       // lower fat, higher carb tolerance
             break;
           case 'ovulatory':
-            proteinPerKg = 2.0;  // peak protein for peak performance
+            proteinPerKg = Math.min(2.0, baseProtein + 0.2);  // peak protein for peak performance
             fatPct = 0.22;       // lower fat, fuel with carbs
             break;
           case 'luteal':
-            proteinPerKg = 1.7;  // moderate protein
-            fatPct = 0.28;       // moderate fat
-            break;                // carbs fill the rest — satisfies cravings
+            proteinPerKg = baseProtein;  // stay at base, moderate protein
+            fatPct = 0.28;       // moderate fat, carbs fill the rest — satisfies cravings
+            break;
         }
 
         const proteinG = Math.round(lbm * proteinPerKg);
