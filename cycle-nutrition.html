@@ -382,6 +382,52 @@
       border-color: #6bcb77;
       color: #6bcb77;
     }
+
+    .contact-footer {
+      margin-top: 24px;
+      padding: 24px;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      text-align: center;
+    }
+
+    .contact-footer p {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .contact-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .contact-btn {
+      flex: 1;
+      display: block;
+      padding: 14px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity 0.2s;
+      line-height: 1.4;
+    }
+
+    .contact-btn:hover { opacity: 0.85; }
+
+    .contact-btn.email {
+      background: linear-gradient(135deg, #4a9eff, #2d7cd6);
+      color: #fff;
+    }
+
+    .contact-btn.insta {
+      background: linear-gradient(135deg, #e87eaa, #c95c8a);
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -645,6 +691,14 @@
         <p class="disclaimer">
           Phase durations are based on a typical 28-day cycle and may vary. Calorie adjustments are balanced across the full cycle so your overall weekly deficit stays on track. Consult a healthcare professional for personalized advice.
         </p>
+      </div>
+    </div>
+
+    <div class="contact-footer">
+      <p>Want personalized guidance? I'm a NASM Certified Nutritionist and Personal Trainer.</p>
+      <div class="contact-buttons">
+        <a href="mailto:zzhu0926@gmail.com?subject=My%20Cycle%20Nutrition%20Results" class="contact-btn email">Share your results with a<br>NASM certified nutritionist</a>
+        <a href="https://instagram.com/ZIJINGZ" target="_blank" class="contact-btn insta">Follow or DM<br>for free consultation</a>
       </div>
     </div>
   </div>
