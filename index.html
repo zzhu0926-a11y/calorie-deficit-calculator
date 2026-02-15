@@ -4,7 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calorie Deficit & Macro Calculator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    @media print {
+      body { background: #0f0f0f !important; padding: 20px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .card, .results { break-inside: avoid; }
+      .container > nav, .container > h1, .container > .subtitle, .container > .card:first-of-type { display: none !important; }
+      .results { display: block !important; }
+      .share-buttons { display: none !important; }
+      .macro-bar-bg, .macro-bar-fill { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -525,7 +534,8 @@
 
         <div class="share-buttons">
           <button class="share-btn" id="btn-share-link" onclick="shareLink()">Share Link</button>
-          <button class="share-btn" id="btn-save-image" onclick="saveImage()">Save as Image</button>
+          <button class="share-btn" id="btn-save-image" onclick="saveFullImage()">Save as Image</button>
+          <button class="share-btn" id="btn-save-pdf" onclick="window.print()">Save as PDF</button>
         </div>
 
         <p class="disclaimer">BMR is averaged from Katch-McArdle and Mifflin-St Jeor formulas for improved accuracy. Results are estimates — adjust based on real-world progress. Consult a professional before starting any diet plan.</p>
@@ -749,194 +759,27 @@
       });
     }
 
-    function saveImage() {
-      const scale = 2;
-      const w = 540 * scale;
-      const h = 720 * scale;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
+    function saveFullImage() {
+      const resultsEl = document.querySelector('#results .card');
+      const shareButtons = resultsEl.querySelector('.share-buttons');
+      shareButtons.style.display = 'none';
 
-      const cw = 540;
+      html2canvas(resultsEl, {
+        backgroundColor: '#0f0f0f',
+        scale: 2,
+        useCORS: true,
+      }).then(canvas => {
+        shareButtons.style.display = '';
+        const link = document.createElement('a');
+        link.download = 'my-calorie-plan.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
 
-      // Background
-      ctx.fillStyle = '#0f0f0f';
-      ctx.fillRect(0, 0, cw, 720);
-
-      // Card background
-      roundRect(ctx, 20, 20, cw - 40, 680, 16, '#1a1a1a');
-
-      // Title
-      ctx.fillStyle = '#888';
-      ctx.font = '600 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('MY CALORIE DEFICIT PLAN', cw / 2, 56);
-
-      // Big calorie number
-      ctx.fillStyle = '#4a9eff';
-      ctx.font = '700 52px -apple-system, sans-serif';
-      ctx.fillText(document.getElementById('target-cal').textContent, cw / 2, 115);
-      ctx.fillStyle = '#888';
-      ctx.font = '400 13px -apple-system, sans-serif';
-      ctx.fillText('Daily Calories (kcal)', cw / 2, 136);
-
-      // Stats row
-      const stats = [
-        { label: 'TDEE', value: document.getElementById('res-tdee').textContent },
-        { label: 'Deficit', value: document.getElementById('res-deficit').textContent },
-        { label: 'BMR', value: document.getElementById('res-bmr').textContent },
-        { label: 'To Lose', value: document.getElementById('res-weight-loss').textContent },
-      ];
-      const statY = 170;
-      const statW = (cw - 80) / 4;
-      stats.forEach((s, i) => {
-        const x = 40 + statW * i + statW / 2;
-        roundRect(ctx, 40 + statW * i + 4, statY, statW - 8, 56, 8, '#111');
-        ctx.fillStyle = '#fff';
-        ctx.font = '700 16px -apple-system, sans-serif';
-        ctx.fillText(s.value, x, statY + 26);
-        ctx.fillStyle = '#666';
-        ctx.font = '400 10px -apple-system, sans-serif';
-        ctx.fillText(s.label, x, statY + 44);
+        const btn = document.getElementById('btn-save-image');
+        btn.textContent = 'Saved!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Save as Image'; btn.classList.remove('copied'); }, 2000);
       });
-
-      // Macros section
-      const macroY = 252;
-      ctx.fillStyle = '#666';
-      ctx.font = '600 11px -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('DAILY MACROS', 48, macroY);
-
-      const macros = [
-        { name: 'Protein', value: document.getElementById('macro-protein').textContent, color: '#ff6b6b' },
-        { name: 'Fat', value: document.getElementById('macro-fat').textContent, color: '#ffd93d' },
-        { name: 'Carbs', value: document.getElementById('macro-carbs').textContent, color: '#6bcb77' },
-      ];
-
-      // Macro donut chart
-      const centerX = 130;
-      const centerY = macroY + 80;
-      const radius = 50;
-      const lineWidth = 14;
-
-      const targetCal = parseInt(document.getElementById('target-cal').textContent);
-      const proteinCal = parseInt(document.getElementById('macro-protein').textContent.split('·')[1]) || 0;
-      const fatCalVal = parseInt(document.getElementById('macro-fat').textContent.split('·')[1]) || 0;
-      const carbsCalVal = parseInt(document.getElementById('macro-carbs').textContent.split('·')[1]) || 0;
-      const totalMacro = proteinCal + fatCalVal + carbsCalVal;
-
-      const slices = [
-        { pct: proteinCal / totalMacro, color: '#ff6b6b' },
-        { pct: fatCalVal / totalMacro, color: '#ffd93d' },
-        { pct: carbsCalVal / totalMacro, color: '#6bcb77' },
-      ];
-
-      let startAngle = -Math.PI / 2;
-      slices.forEach(s => {
-        const endAngle = startAngle + s.pct * Math.PI * 2;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = lineWidth;
-        ctx.lineCap = 'butt';
-        ctx.stroke();
-        startAngle = endAngle;
-      });
-
-      // Center text in donut
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 18px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(targetCal, centerX, centerY + 2);
-      ctx.fillStyle = '#666';
-      ctx.font = '400 9px -apple-system, sans-serif';
-      ctx.fillText('kcal', centerX, centerY + 16);
-
-      // Macro labels (right side of donut)
-      ctx.textAlign = 'left';
-      macros.forEach((m, i) => {
-        const my = macroY + 42 + i * 32;
-        const mx = 210;
-        ctx.fillStyle = m.color;
-        ctx.beginPath();
-        ctx.arc(mx, my - 4, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.font = '600 13px -apple-system, sans-serif';
-        ctx.fillText(m.name, mx + 14, my);
-        ctx.fillStyle = '#aaa';
-        ctx.font = '400 12px -apple-system, sans-serif';
-        ctx.fillText(m.value, mx + 14, my + 18);
-      });
-
-      // Breakdown section
-      const bdY = 405;
-      ctx.fillStyle = '#666';
-      ctx.font = '600 11px -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('BREAKDOWN', 48, bdY);
-
-      roundRect(ctx, 40, bdY + 10, cw - 80, 180, 10, '#111');
-
-      const bdItems = [
-        ['Lean Body Mass', document.getElementById('bd-lbm').textContent],
-        ['Target Weight', document.getElementById('bd-target-w').textContent],
-        ['Fat to Lose', document.getElementById('bd-fat-lose').textContent],
-        ['Weekly Loss Rate', document.getElementById('bd-weekly').textContent],
-        ['Protein', document.getElementById('bd-protein').textContent.split('—')[0].trim()],
-        ['Fat', document.getElementById('bd-fat').textContent.split('—')[0].trim()],
-        ['Carbs', document.getElementById('bd-carbs').textContent.split('—')[0].trim()],
-      ];
-
-      bdItems.forEach((item, i) => {
-        const iy = bdY + 34 + i * 24;
-        ctx.fillStyle = '#888';
-        ctx.font = '400 12px -apple-system, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(item[0], 56, iy);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.font = '600 12px -apple-system, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(item[1], cw - 56, iy);
-        if (i < bdItems.length - 1) {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(56, iy + 6, cw - 112, 1);
-        }
-      });
-
-      // Footer
-      ctx.fillStyle = '#444';
-      ctx.font = '400 10px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('zzhu0926-a11y.github.io/calorie-deficit-calculator', cw / 2, 680);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = 'my-calorie-plan.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      const btn = document.getElementById('btn-save-image');
-      btn.textContent = 'Saved!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Save as Image'; btn.classList.remove('copied'); }, 2000);
-    }
-
-    function roundRect(ctx, x, y, w, h, r, fill) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
     }
 
     // Load from URL parameters

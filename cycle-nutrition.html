@@ -4,7 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cycle-Based Nutrition Planner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    @media print {
+      body { background: #0f0f0f !important; padding: 20px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .card, .results, .phase-card { break-inside: avoid; }
+      .container > nav, .container > h1, .container > .subtitle, .container > .card:first-of-type { display: none !important; }
+      .results { display: block !important; }
+      .share-buttons { display: none !important; }
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -630,7 +638,8 @@
 
         <div class="share-buttons">
           <button class="share-btn" id="btn-share-link" onclick="shareLink()">Share Link</button>
-          <button class="share-btn" id="btn-save-image" onclick="saveImage()">Save as Image</button>
+          <button class="share-btn" id="btn-save-image" onclick="saveFullImage()">Save as Image</button>
+          <button class="share-btn" id="btn-save-pdf" onclick="window.print()">Save as PDF</button>
         </div>
 
         <p class="disclaimer">
@@ -785,162 +794,27 @@
       });
     }
 
-    function saveImage() {
-      const scale = 2;
-      const w = 540 * scale;
-      const h = 780 * scale;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
-      const cw = 540;
+    function saveFullImage() {
+      const resultsEl = document.querySelector('#results .card');
+      const shareButtons = resultsEl.querySelector('.share-buttons');
+      shareButtons.style.display = 'none';
 
-      // Background
-      ctx.fillStyle = '#0f0f0f';
-      ctx.fillRect(0, 0, cw, 780);
+      html2canvas(resultsEl, {
+        backgroundColor: '#0f0f0f',
+        scale: 2,
+        useCORS: true,
+      }).then(canvas => {
+        shareButtons.style.display = '';
+        const link = document.createElement('a');
+        link.download = 'my-cycle-nutrition-plan.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
 
-      // Card
-      roundRect(ctx, 20, 20, cw - 40, 740, 16, '#1a1a1a');
-
-      // Title
-      ctx.fillStyle = '#e87eaa';
-      ctx.font = '600 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('MY CYCLE-BASED NUTRITION PLAN', cw / 2, 52);
-
-      // Baseline stats
-      const baseline = [
-        { label: 'TDEE', value: document.getElementById('bs-tdee').textContent },
-        { label: 'Target Cal', value: document.getElementById('bs-target').textContent },
-        { label: 'Deficit', value: document.getElementById('bs-deficit').textContent },
-      ];
-      const bsW = (cw - 80) / 3;
-      baseline.forEach((s, i) => {
-        const x = 40 + bsW * i + bsW / 2;
-        roundRect(ctx, 40 + bsW * i + 4, 66, bsW - 8, 50, 8, '#111');
-        ctx.fillStyle = '#4a9eff';
-        ctx.font = '700 16px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(s.value, x, 90);
-        ctx.fillStyle = '#666';
-        ctx.font = '400 9px -apple-system, sans-serif';
-        ctx.fillText(s.label, x, 106);
+        const btn = document.getElementById('btn-save-image');
+        btn.textContent = 'Saved!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Save as Image'; btn.classList.remove('copied'); }, 2000);
       });
-
-      // Cycle timeline bar
-      const tlY = 134;
-      const tlW = cw - 80;
-      const phases = [
-        { days: 5, color: '#e05a6d' },
-        { days: 9, color: '#5ec4e0' },
-        { days: 3, color: '#a87ee0' },
-        { days: 11, color: '#e0a85e' },
-      ];
-      let tlX = 40;
-      phases.forEach(p => {
-        const pw = (p.days / 28) * tlW;
-        roundRect(ctx, tlX, tlY, pw - 2, 6, 3, p.color);
-        tlX += pw;
-      });
-
-      // Phase cards
-      const phaseData = [
-        {
-          name: 'Menstrual', days: 'Day 1-5', tag: 'Rest & Recover',
-          color: '#e05a6d', bg: '#1a0f11',
-          prefix: 'm',
-        },
-        {
-          name: 'Follicular', days: 'Day 6-14', tag: 'Push Hard',
-          color: '#5ec4e0', bg: '#0f1a1d',
-          prefix: 'f',
-        },
-        {
-          name: 'Ovulatory', days: 'Day 15-17', tag: 'Peak Energy',
-          color: '#a87ee0', bg: '#150f1d',
-          prefix: 'o',
-        },
-        {
-          name: 'Luteal', days: 'Day 18-28', tag: 'Ease Up',
-          color: '#e0a85e', bg: '#1d170f',
-          prefix: 'l',
-        },
-      ];
-
-      let cardY = 154;
-      phaseData.forEach(p => {
-        const cardH = 130;
-        roundRect(ctx, 40, cardY, cw - 80, cardH, 10, p.bg);
-
-        // Phase name and days
-        ctx.fillStyle = p.color;
-        ctx.font = '700 15px -apple-system, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(p.name, 56, cardY + 24);
-        ctx.fillStyle = '#888';
-        ctx.font = '400 10px -apple-system, sans-serif';
-        ctx.fillText(p.days, 56, cardY + 40);
-
-        // Tag
-        ctx.textAlign = 'right';
-        const tagW = ctx.measureText(p.tag).width + 16;
-        roundRect(ctx, cw - 56 - tagW, cardY + 12, tagW, 22, 11, p.bg);
-        ctx.fillStyle = p.color;
-        ctx.font = '600 9px -apple-system, sans-serif';
-        ctx.fillText(p.tag, cw - 64, cardY + 27);
-
-        // Macro stats
-        const macroLabels = ['CALORIES', 'PROTEIN', 'FAT', 'CARBS'];
-        const macroIds = [p.prefix + '-cal', p.prefix + '-protein', p.prefix + '-fat', p.prefix + '-carbs'];
-        const statW = (cw - 120) / 4;
-        macroLabels.forEach((label, i) => {
-          const sx = 56 + statW * i + statW / 2;
-          roundRect(ctx, 56 + statW * i, cardY + 54, statW - 8, 58, 8, 'rgba(0,0,0,0.3)');
-          ctx.fillStyle = '#fff';
-          ctx.font = '700 16px -apple-system, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(document.getElementById(macroIds[i]).textContent, sx - 4, cardY + 82);
-          ctx.fillStyle = '#888';
-          ctx.font = '400 8px -apple-system, sans-serif';
-          ctx.fillText(label, sx - 4, cardY + 100);
-        });
-
-        cardY += cardH + 10;
-      });
-
-      // Footer
-      ctx.fillStyle = '#444';
-      ctx.font = '400 10px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('zzhu0926-a11y.github.io/calorie-deficit-calculator/cycle-nutrition.html', cw / 2, 740);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = 'my-cycle-nutrition-plan.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      const btn = document.getElementById('btn-save-image');
-      btn.textContent = 'Saved!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Save as Image'; btn.classList.remove('copied'); }, 2000);
-    }
-
-    function roundRect(ctx, x, y, w, h, r, fill) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
     }
 
     // Load from URL parameters
